@@ -112,7 +112,15 @@ void SH1106_128x64_Driver::Init() {
   page_dma.disable();
 #endif
 
+  digitalWriteFast(OLED_DC, LOW); 
+  setContrast(255);
+  digitalWriteFast(OLED_DC, HIGH);
+
   Clear();
+
+  digitalWriteFast(OLED_DC, LOW); 
+  setBrightness(128);
+  digitalWriteFast(OLED_DC, HIGH);
 }
 
 /*static*/
@@ -217,4 +225,45 @@ void SH1106_128x64_Driver::SPI_send(void *bufr, size_t n) {
 /*static*/
 void SH1106_128x64_Driver::AdjustOffset(uint8_t offset) {
   SH1106_data_start_seq[1] = offset; // lower 4 bits of col adr
+}
+
+void SH1106_128x64_Driver::setContrast(uint8_t contrast, uint8_t precharge, uint8_t comdetect) {
+#define SETPRECHARGE 0xD9
+#define SETCONTRAST 0x81
+#define SETVCOMDETECT 0xDB
+#define DISPLAYON 0xAF
+#define DISPLAYALLON_RESUME 0xA4
+#define NORMALDISPLAY 0xA6
+
+  uint8_t commands[] = {
+      SETPRECHARGE, // 0xD9
+      precharge,    // 0xF1 default, to lower the contrast, put 1-1F
+      SETCONTRAST,
+      contrast,      // 0-255
+      SETVCOMDETECT, // 0xDB, (additionally needed to lower the contrast)
+      comdetect,     // 0x40 default, to lower the contrast, put 0
+      DISPLAYALLON_RESUME,
+      NORMALDISPLAY,
+      DISPLAYON,
+  };
+
+  SPI_send(commands, sizeof(commands));
+}
+
+void SH1106_128x64_Driver::setBrightness(uint8_t brightness) {
+  uint8_t contrast = brightness;
+  if (brightness < 128) {
+    // Magic values to get a smooth/ step-free transition
+    contrast = brightness * 1.171;
+  } else {
+    contrast = brightness * 1.171 - 43;
+  }
+
+  uint8_t precharge = 241;
+  if (brightness == 0) {
+    precharge = 0;
+  }
+  uint8_t comdetect = brightness / 8;
+
+  setContrast(contrast, precharge, comdetect);
 }

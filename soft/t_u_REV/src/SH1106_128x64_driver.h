@@ -42,6 +42,10 @@ struct SH1106_128x64_Driver {
   // However at least one display (mine) uses offset 0 so it's minimally
   // configurable
   static void AdjustOffset(uint8_t offset);
+
+  //adapted from: https://github.com/ThingPulse/esp8266-oled-ssd1306
+  static void setContrast(uint8_t contrast, uint8_t precharge = 241, uint8_t comdetect = 64);
+  static void setBrightness(uint8_t);
 };
 
 #endif // SH1106_128X64_DRIVER_H_
