@@ -32,15 +32,16 @@ static const uint8_t global_divisors[] {
   0,
   24,
   48,
-  96
+  96,
+  24
 };
 
 const char* const global_divisors_strings[] = {
-  "-", "24PPQ", "48PPQ", "96PPQ"
+  "1PPQ", "24PPQ", "48PPQ", "96PPQ", "MIDI"
 };
 
 SETTINGS_DECLARE(TU::GlobalConfig, TU::GLOBAL_CONFIG_SETTING_LAST) {
-  { 0, 0, 3, "TR1 global div", global_divisors_strings, settings::STORAGE_TYPE_U4 },
+  { 0, 0, 4, "TR1 clock", global_divisors_strings, settings::STORAGE_TYPE_U4 },
   { 0, 0, 1, "TR1 master", TU::Strings::no_yes, settings::STORAGE_TYPE_U4 },
 };
 
@@ -55,6 +56,8 @@ void GlobalConfig::Init()
 
 void GlobalConfig::Apply()
 {
+  DigitalInputs::Init(global_div1() == 4); // Init Midi-Serial
+
   auto div = global_divisors[global_div1()];
   if (DigitalInputs::global_div_TR1() != div) {
     SERIAL_PRINTLN("Global divisor, TR1: %i", div);

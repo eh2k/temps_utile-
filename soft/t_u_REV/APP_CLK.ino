@@ -37,6 +37,12 @@
 #include "TU_input_maps.h"
 #include <algorithm>
 
+namespace TU
+{
+  uint32_t midiBPM();
+  bool midiPlaying();
+}
+
 namespace menu = TU::menu;
 
 static const uint8_t RND_MAX = 31;          // max random (n)
@@ -1206,7 +1212,7 @@ public:
         }
         break;
         default:
-        break;   
+        break;    
       }
       
       // if triggered, new burst ... 
@@ -2521,6 +2527,7 @@ size_t CLOCKS_restore(util::StreamBufferReader &stream_buffer) {
   clock_channel[CLOCK_CHANNEL_4].cv_pattern_changed(clock_channel[CLOCK_CHANNEL_4].get_cv_mask(), true);
 
   TU::global_config.Restore(stream_buffer);
+  TU::global_config.Apply();
 
   return stream_buffer.underflow() ? 0 : stream_buffer.read();
 }
@@ -2678,6 +2685,22 @@ void CLOCKS_isr() {
   clock_channel[3].logic(CLOCK_CHANNEL_4);
   clock_channel[4].logic(CLOCK_CHANNEL_5);
   clock_channel[5].logic(CLOCK_CHANNEL_6);
+
+  if (!TU::midiPlaying())
+  {
+    global_div_count_TR1 = 0; // TU::DigitalInputs::global_div_TR1(); //7 + TU::DigitalInputs::global_div_TR1() * 3;
+
+    if (ext_frequency[CHANNEL_TRIGGER_TR1] < 0xFFFFFFFF)
+      ticks_src1 = ext_frequency[CHANNEL_TRIGGER_TR1] - 1;
+
+    if (ext_frequency[CHANNEL_TRIGGER_TR2] < 0xFFFFFFFF)
+      ticks_src2 = ext_frequency[CHANNEL_TRIGGER_TR2] - 1;
+
+    for (int i = 0; i < NUM_CHANNELS; ++i)
+    {
+      clock_channel[i].resync(0, clock_channel[i].get_div_cnt());
+    }
+  }
 }
 
 void CLOCKS_handleButtonEvent(const UI::Event &event) {
@@ -3178,6 +3201,25 @@ void Clock_channel::RenderScreensaver(weegfx::coord_t start_x) const {
 }
 
 void CLOCKS_screensaver() {
+
+  if (TU::global_config.global_div1() == 4) {
+    char bpm[16];
+    uint32_t ibpm = TU::midiBPM();
+    if (ibpm > 0)
+    {
+      for (int i = 0; i < 14; i++)
+        graphics.drawHLine(5, 15 + i, i < 7 ? i : 14 - i);
+
+      sprintf(bpm, "%lu.%lu BPM", ibpm / 10, ibpm - (ibpm / 10) * 10);
+      graphics.drawStr(16, 19, bpm);
+    }
+    else
+    {
+      graphics.drawRect(5, 16, 3, 12);
+      graphics.drawRect(10, 16, 3, 12);
+    }
+  }
+
   clock_channel[0].RenderScreensaver(4);
   clock_channel[1].RenderScreensaver(26);
   clock_channel[2].RenderScreensaver(48);

@@ -21,7 +21,7 @@ static constexpr uint32_t DIGITAL_INPUT_2_MASK = DIGITAL_INPUT_MASK(DIGITAL_INPU
 class DigitalInputs {
 public:
 
-  static void Init();
+  static void Init(bool tr1_midi = true);
 
   static void Scan();
   
